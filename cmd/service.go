@@ -14,10 +14,16 @@ import (
 const serviceTemplate = `[Unit]
 Description=NanoCtl Fan Controller
 After=multi-user.target
+# Never give up retrying. With systemd's default rate limit, five quick failures
+# (a bad config edit, a missing sysfs path) make it stop trying permanently and
+# leave the machine with no fan control and nothing watching. This directive is
+# only honoured in [Unit] — systemd silently ignores it under [Service].
+StartLimitIntervalSec=0
 
 [Service]
 ExecStart={{.BinaryPath}} fan
 Restart=always
+RestartSec=5
 User=root
 Type=simple
 
