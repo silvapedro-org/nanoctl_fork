@@ -73,6 +73,8 @@ func runFan(cmd *cobra.Command, args []string) error {
 			},
 		},
 		TargetTemp:    cfg.Temperature.Target,
+		FailureDuty:   cfg.Temperature.FailureDuty,
+		FailureAfter:  cfg.Temperature.FailureAfter,
 		Kp:            cfg.PID.Kp,
 		Ki:            cfg.PID.Ki,
 		Kd:            cfg.PID.Kd,

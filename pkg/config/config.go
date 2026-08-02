@@ -36,8 +36,10 @@ type FanConfig struct {
 	} `yaml:"pwm"`
 
 	Temperature struct {
-		Target float64      `yaml:"target"`
-		Source SourceConfig `yaml:"source"`
+		Target       float64      `yaml:"target"`
+		FailureDuty  float64      `yaml:"failure_duty"`
+		FailureAfter int          `yaml:"failure_after"`
+		Source       SourceConfig `yaml:"source"`
 	} `yaml:"temperature"`
 
 	PID struct {
@@ -135,6 +137,14 @@ func applyDefaults(config *FanConfig) {
 	if config.Temperature.Target == 0 {
 		config.Temperature.Target = 55.0
 	}
+	// Losing the temperature reading must fail SAFE: a controller that cannot
+	// measure has no business deciding the fan is not needed.
+	if config.Temperature.FailureDuty == 0 {
+		config.Temperature.FailureDuty = 100.0
+	}
+	if config.Temperature.FailureAfter == 0 {
+		config.Temperature.FailureAfter = 3
+	}
 
 	// Default temperature source settings
 	if config.Temperature.Source.Primary == "" {
@@ -208,6 +218,13 @@ func (c *FanConfig) Validate() error {
 	// Validate target temperature (reasonable range)
 	if c.Temperature.Target < 20.0 || c.Temperature.Target > 90.0 {
 		return fmt.Errorf("temperature.target must be between 20 and 90°C, got %.1f", c.Temperature.Target)
+	}
+
+	if c.Temperature.FailureDuty < 0 || c.Temperature.FailureDuty > 100 {
+		return fmt.Errorf("temperature.failure_duty must be between 0 and 100, got %.1f", c.Temperature.FailureDuty)
+	}
+	if c.Temperature.FailureAfter < 1 {
+		return fmt.Errorf("temperature.failure_after must be at least 1, got %d", c.Temperature.FailureAfter)
 	}
 
 	// Validate PID values (must be positive)

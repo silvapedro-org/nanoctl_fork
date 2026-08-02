@@ -33,6 +33,14 @@ pwm:
 temperature:
   target: 55.0  # Target CPU temperature in Celsius
 
+  # Fail-safe. If the temperature cannot be read — Prometheus unreachable, the
+  # thermal file gone — the controller has no idea whether cooling is needed, so
+  # it must not keep the fan at whatever duty it last chose. After this many
+  # consecutive failed reads the fan is forced to failure_duty until a reading
+  # succeeds again.
+  failure_duty: 100   # percent
+  failure_after: 3    # consecutive failed reads
+
   # Temperature source configuration
   source:
     # Primary source: "prometheus" or "file"

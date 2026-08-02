@@ -18,6 +18,8 @@ type MonitorConfig struct {
 	Pin           int
 	PWM           PWMConfig
 	TargetTemp    float64
+	FailureDuty   float64
+	FailureAfter  int
 	Kp, Ki, Kd    float64
 	CheckInterval time.Duration
 	TempSource    temperature.Source
@@ -76,6 +78,8 @@ func RunMonitor(ctx context.Context, config MonitorConfig) error {
 	ticker := time.NewTicker(config.CheckInterval)
 	defer ticker.Stop()
 
+	consecutiveFailures := 0
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -85,8 +89,29 @@ func RunMonitor(ctx context.Context, config MonitorConfig) error {
 			// Use the configured temperature source
 			temp, err := config.TempSource.GetTemperature()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error reading temp: %v\n", err)
+				// Fail SAFE. Previously this only logged and carried on, which
+				// left the fan frozen at whatever duty it happened to be at when
+				// the source died — potentially idling while the machine heats.
+				// A controller that cannot measure must not assume cooling is
+				// unnecessary.
+				consecutiveFailures++
+				fmt.Fprintf(os.Stderr, "Error reading temp (%d consecutive): %v\n", consecutiveFailures, err)
+				if consecutiveFailures == config.FailureAfter {
+					fmt.Fprintf(os.Stderr,
+						"Temperature unreadable %d times in a row — forcing fan to %.0f%% until it recovers\n",
+						consecutiveFailures, config.FailureDuty)
+				}
+				if consecutiveFailures >= config.FailureAfter {
+					controller.SetDutyCycle(config.FailureDuty)
+					if fanGauge != nil {
+						fanGauge.Record(ctx, config.FailureDuty)
+					}
+				}
 				continue
+			}
+			if consecutiveFailures > 0 {
+				fmt.Fprintf(os.Stderr, "Temperature source recovered after %d failed reads\n", consecutiveFailures)
+				consecutiveFailures = 0
 			}
 
 			pid.SetPID(-config.Kp, -config.Ki, -config.Kd)
