@@ -47,7 +47,13 @@ jobs:
         run: make build-arm64
 
       - name: Show what was built
-        run: ./nanoctl-linux-arm64 version
+        # NOT ./nanoctl-linux-arm64 version — the runner is x86_64 and this is an
+        # arm64 cross-build, so executing it fails with "Exec format error".
+        # `go version -m` reads the embedded build info without running it, which
+        # is what actually proves the ldflags landed.
+        run: |
+          file nanoctl-linux-arm64
+          go version -m nanoctl-linux-arm64 | grep -E 'ldflags|^\s' || true
 
       - name: Publish prerelease
         uses: softprops/action-gh-release@v2
