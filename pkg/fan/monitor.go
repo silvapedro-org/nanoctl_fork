@@ -46,7 +46,21 @@ func RunMonitor(ctx context.Context, config MonitorConfig) error {
 	if err := controller.Start(); err != nil {
 		return fmt.Errorf("failed to start PWM controller: %w", err)
 	}
-	defer controller.Stop()
+	defer func() {
+		// Hand the fan over in a SAFE state. This used to call Stop(), which on
+		// hardware PWM writes enable=0 — so stopping the daemon stopped the fan
+		// and left it stopped. Us exiting says nothing about whether the machine
+		// still needs cooling, and on a shared-fan chassis it may be cooling
+		// boards that have no idea this process exists.
+		//
+		// The exported channel is deliberately left enabled: it is meant to
+		// outlive us. Software PWM cannot outlive the process, so there the
+		// goroutine is stopped rather than leaked.
+		controller.SetDutyCycle(config.FailureDuty)
+		if config.PWM.Mode == "software" {
+			controller.Stop()
+		}
+	}()
 
 	// Initialize PID Controller
 	pid := pidctrl.NewPIDController(config.Kp, config.Ki, config.Kd)
