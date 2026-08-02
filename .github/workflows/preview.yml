@@ -1,4 +1,4 @@
-name: Preview build
+name: Preview
 
 # Manual builds, published as a PRERELEASE so they can be fetched by URL the
 # same way a real release is — useful for testing a branch on hardware without
@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  preview:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
