@@ -1,15 +1,19 @@
-name: Release
+name: Build
 
+# Manual builds, for grabbing a binary off a branch without cutting a release.
+# Releases stay in release.yml, triggered by pushing a v* tag.
+#
+# Note: GitHub only offers the "Run workflow" button for workflows present on
+# the repository's DEFAULT branch. If this lives only on a feature branch, the
+# button will not appear.
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,16 +36,14 @@ jobs:
         run: go test ./...
 
       - name: Build ARM64 (RPi 5 / CM5 / LPi3H)
-        # Via the Makefile so the version/commit/date ldflags are applied. A bare
-        # `go build` drops them and every release reports itself as "dev".
         run: make build-arm64
 
       - name: Show what was built
         run: ./nanoctl-linux-arm64 version
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            nanoctl-linux-arm64
-          generate_release_notes: true
+          name: nanoctl-linux-arm64-${{ github.ref_name }}
+          path: nanoctl-linux-arm64
+          if-no-files-found: error
