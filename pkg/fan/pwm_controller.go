@@ -6,7 +6,31 @@ import "fmt"
 type PWMConfig struct {
 	Mode         string
 	FrequencyKHz float64
+	MinDuty      float64
+	OffBelow     float64
 	Hardware     HardwarePWMConfig
+}
+
+// applyDutyFloor keeps the requested duty out of the band where a fan is powered
+// but too slow to actually turn. Most 4-pin fans stall below roughly 30%: the
+// controller then believes it is cooling while the fan is stopped, the
+// temperature climbs, the integral winds up, and the fan slams back on — a
+// self-inflicted oscillation.
+//
+// At or below OffBelow the fan is stopped outright; between there and MinDuty it
+// is lifted to MinDuty. A MinDuty of 0 disables the floor entirely, which is the
+// original behaviour and right for 2-pin fans that do not stall.
+func applyDutyFloor(output, minDuty, offBelow float64) float64 {
+	if minDuty <= 0 {
+		return output
+	}
+	if output <= offBelow {
+		return 0
+	}
+	if output < minDuty {
+		return minDuty
+	}
+	return output
 }
 
 // HardwarePWMConfig defines sysfs hardware PWM settings.

@@ -13,6 +13,16 @@ pwm:
   # PWM frequency
   frequency_khz: 25
 
+  # Stall band. Most 4-pin fans (e.g. Noctua) stop turning below roughly 30%
+  # duty, but the PID keeps believing it is cooling — the temperature climbs,
+  # the integral winds up, and the fan slams back on. Set min_duty to the lowest
+  # duty that reliably keeps YOUR fan spinning; requests between off_below and
+  # min_duty are lifted to min_duty, and anything at or under off_below stops the
+  # fan outright. Leave min_duty at 0 to disable the floor (correct for 2-pin
+  # fans, which do not stall).
+  min_duty: 0    # e.g. 30 for a Noctua
+  off_below: 0   # e.g. 5 — below this, stop rather than idle at min_duty
+
   # Hardware PWM settings (used when mode is "hardware")
   hardware:
     chip: "pwmchip0"  # /sys/class/pwm/<chip>

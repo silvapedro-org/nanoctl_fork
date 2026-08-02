@@ -91,7 +91,7 @@ func RunMonitor(ctx context.Context, config MonitorConfig) error {
 
 			pid.SetPID(-config.Kp, -config.Ki, -config.Kd)
 
-			output := pid.Update(temp)
+			output := applyDutyFloor(pid.Update(temp), config.PWM.MinDuty, config.PWM.OffBelow)
 
 			controller.SetDutyCycle(output)
 

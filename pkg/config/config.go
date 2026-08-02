@@ -26,6 +26,8 @@ type FanConfig struct {
 	PWM struct {
 		Mode         string  `yaml:"mode"`
 		FrequencyKHz float64 `yaml:"frequency_khz"`
+		MinDuty      float64 `yaml:"min_duty"`
+		OffBelow     float64 `yaml:"off_below"`
 		Hardware     struct {
 			Chip     string `yaml:"chip"`
 			Channel  int    `yaml:"channel"`
@@ -190,6 +192,17 @@ func (c *FanConfig) Validate() error {
 		}
 	default:
 		return fmt.Errorf("pwm.mode must be 'software' or 'hardware', got '%s'", c.PWM.Mode)
+	}
+
+	// Stall band. min_duty of 0 leaves the behaviour unchanged (no floor).
+	if c.PWM.MinDuty < 0 || c.PWM.MinDuty > 100 {
+		return fmt.Errorf("pwm.min_duty must be between 0 and 100, got %.1f", c.PWM.MinDuty)
+	}
+	if c.PWM.OffBelow < 0 || c.PWM.OffBelow > 100 {
+		return fmt.Errorf("pwm.off_below must be between 0 and 100, got %.1f", c.PWM.OffBelow)
+	}
+	if c.PWM.MinDuty > 0 && c.PWM.OffBelow >= c.PWM.MinDuty {
+		return fmt.Errorf("pwm.off_below (%.1f) must be below pwm.min_duty (%.1f), otherwise the fan can never run at its floor", c.PWM.OffBelow, c.PWM.MinDuty)
 	}
 
 	// Validate target temperature (reasonable range)

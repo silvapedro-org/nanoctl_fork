@@ -64,6 +64,8 @@ func runFan(cmd *cobra.Command, args []string) error {
 		PWM: fan.PWMConfig{
 			Mode:         cfg.PWM.Mode,
 			FrequencyKHz: cfg.PWM.FrequencyKHz,
+			MinDuty:      cfg.PWM.MinDuty,
+			OffBelow:     cfg.PWM.OffBelow,
 			Hardware: fan.HardwarePWMConfig{
 				Chip:     cfg.PWM.Hardware.Chip,
 				Channel:  cfg.PWM.Hardware.Channel,
