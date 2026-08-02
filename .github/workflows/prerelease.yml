@@ -1,4 +1,4 @@
-name: Preview
+name: Prerelease
 
 # Manual builds, published as a PRERELEASE so they can be fetched by URL the
 # same way a real release is — useful for testing a branch on hardware without
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Preview tag (default: preview-<run number>)'
+        description: 'Prerelease tag (default: prerelease-<run number>)'
         required: false
         default: ''
 
@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 jobs:
-  preview:
+  prerelease:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -49,17 +49,17 @@ jobs:
       - name: Show what was built
         run: ./nanoctl-linux-arm64 version
 
-      - name: Publish preview release
+      - name: Publish prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || format('preview-{0}', github.run_number) }}
-          name: "Preview ${{ inputs.tag || github.run_number }} (${{ github.ref_name }})"
+          tag_name: ${{ inputs.tag || format('prerelease-{0}', github.run_number) }}
+          name: "Prerelease ${{ inputs.tag || github.run_number }} (${{ github.ref_name }})"
           # Never surfaces as "Latest", and stays clearly separate from real
           # releases in the UI and the API.
           prerelease: true
           target_commitish: ${{ github.sha }}
           body: |
-            Preview build of `${{ github.ref_name }}` at ${{ github.sha }}.
+            Prerelease build of `${{ github.ref_name }}` at ${{ github.sha }}.
             Not a release — built manually for hardware testing.
           files: |
             nanoctl-linux-arm64
