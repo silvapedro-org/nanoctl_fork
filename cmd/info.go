@@ -42,7 +42,7 @@ func printChipInfo(path string) {
 
 	name := c.Name
 	label := c.Label
-	lines := c.Lines
+	lines := c.Lines()
 
 	fmt.Printf("  %s: %s (%s) - %d lines\n", filepath.Base(path), name, label, lines)
 }
