@@ -1,16 +1,24 @@
-name: Build
+name: Preview build
 
-# Manual builds, for grabbing a binary off a branch without cutting a release.
-# Releases stay in release.yml, triggered by pushing a v* tag.
+# Manual builds, published as a PRERELEASE so they can be fetched by URL the
+# same way a real release is — useful for testing a branch on hardware without
+# committing to a version number.
+#
+# Proper releases stay in release.yml, triggered by pushing a v* tag.
 #
 # Note: GitHub only offers the "Run workflow" button for workflows present on
 # the repository's DEFAULT branch. If this lives only on a feature branch, the
 # button will not appear.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Preview tag (default: preview-<run number>)'
+        required: false
+        default: ''
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -41,9 +49,17 @@ jobs:
       - name: Show what was built
         run: ./nanoctl-linux-arm64 version
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Publish preview release
+        uses: softprops/action-gh-release@v2
         with:
-          name: nanoctl-linux-arm64-${{ github.ref_name }}
-          path: nanoctl-linux-arm64
-          if-no-files-found: error
+          tag_name: ${{ inputs.tag || format('preview-{0}', github.run_number) }}
+          name: "Preview ${{ inputs.tag || github.run_number }} (${{ github.ref_name }})"
+          # Never surfaces as "Latest", and stays clearly separate from real
+          # releases in the UI and the API.
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            Preview build of `${{ github.ref_name }}` at ${{ github.sha }}.
+            Not a release — built manually for hardware testing.
+          files: |
+            nanoctl-linux-arm64
