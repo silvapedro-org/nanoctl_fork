@@ -160,16 +160,21 @@ func createTemperatureSource(cfg *config.FanConfig) (temperature.Source, error) 
 			return createFallbackSource(cfg, fallback)
 		}
 
-		// Test connection
-		_, err = promSource.GetTemperature()
+		secondary, err := createFallbackSource(cfg, fallback)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Prometheus connection test failed: %v\n", err)
-			fmt.Fprintf(os.Stderr, "Falling back to %s source\n", fallback)
-			return createFallbackSource(cfg, fallback)
+			return nil, err
 		}
 
-		fmt.Println("Using Prometheus as temperature source")
-		return promSource, nil
+		// Deliberately not fatal, and deliberately not a permanent decision: a
+		// Prometheus that is merely slow to start must not condemn the daemon to
+		// the local sensor for the rest of its life. The wrapper keeps retrying.
+		if _, err := promSource.GetTemperature(); err != nil {
+			fmt.Fprintf(os.Stderr, "Prometheus not answering yet, starting on the %s source: %v\n", fallback, err)
+		} else {
+			fmt.Println("Using Prometheus as temperature source")
+		}
+
+		return temperature.NewFallbackSource(promSource, secondary), nil
 	}
 
 	// Use file source
