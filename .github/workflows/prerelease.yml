@@ -1,4 +1,4 @@
-name: Prerelease
+name: PreRelease
 
 # Manual builds, published as a PRERELEASE so they can be fetched by URL the
 # same way a real release is — useful for testing a branch on hardware without
